@@ -3,3 +3,6 @@
 /cache/fof.xml
 /cache/lib_*.zip
 /cache
+
+/tools/awstests.config.php
+/vendor
