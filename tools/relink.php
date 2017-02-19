@@ -89,7 +89,7 @@ function symlink_dir($from, $to)
  */
 function symlink_file($from, $to)
 {
-	if (file_exists($to))
+	if (file_exists($to) || is_link($to))
 	{
 		if (defined('AKEEBA_RELINK_WINDOWS'))
 		{

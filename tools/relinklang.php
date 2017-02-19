@@ -89,7 +89,7 @@ function symlink_dir($from, $to)
  */
 function symlink_file($from, $to)
 {
-	if (file_exists($to))
+	if (file_exists($to) || is_link($to))
 	{
 		if (defined('AKEEBA_RELINK_WINDOWS'))
 		{
@@ -192,13 +192,6 @@ class AkeebaRelinkLanguage
 	];
 
 	/**
-	 * Aliases of the top-level directory holding the translations for all the extensions of this component
-	 *
-	 * @var array
-	 */
-	protected $translationDirectoryAliases = ['translation', 'translations', 'language'];
-
-	/**
 	 * Public constructor. Initialises the class with the user-supplied information.
 	 *
 	 * @param   array $config Configuration parameters. We need root and site.
@@ -207,11 +200,11 @@ class AkeebaRelinkLanguage
 	 */
 	public function __construct($config = array())
 	{
-		if ( !array_key_exists('root', $config))
+		if (!array_key_exists('root', $config))
 		{
 			$config['root'] = dirname(__FILE__);
 		}
-		if ( !array_key_exists('site', $config))
+		if (!array_key_exists('site', $config))
 		{
 			$config['site'] = '/Users/nicholas/Sites/jbeta';
 		}
@@ -240,7 +233,7 @@ class AkeebaRelinkLanguage
 				continue;
 			}
 
-			if ( !$dir->isDir())
+			if (!$dir->isDir())
 			{
 				continue;
 			}
@@ -257,7 +250,7 @@ class AkeebaRelinkLanguage
 				continue;
 			}
 
-			if ( !$dir->isDir())
+			if (!$dir->isDir())
 			{
 				continue;
 			}
@@ -273,37 +266,23 @@ class AkeebaRelinkLanguage
 	 */
 	protected function scanRepository()
 	{
-		// Loop for all translation directory aliases
-		foreach ($this->translationDirectoryAliases as $translationDirectory)
-		{
-			// Make sure the translation directory exists
-			$mainRoot = $this->root . '/' . $translationDirectory;
-
-			if (!is_dir($mainRoot))
-			{
-				continue;
-			}
-
-			$mainRoot = realpath($mainRoot);
-
-			$this->scanAwfComponent($mainRoot);
-			$this->scanComponent($mainRoot);
-			$this->scanModules($mainRoot);
-			$this->scanPlugins($mainRoot);
-		}
+		$this->scanAwfComponent($this->root);
+		$this->scanComponent($this->root);
+		$this->scanModules($this->root);
+		$this->scanPlugins($this->root);
 	}
 
 	/**
 	 * Scan for component translations
 	 *
-	 * @param   string  $mainRoot  The top-level directory where all of extension translations are stored
+	 * @param   string $mainRoot The top-level directory where all of extension translations are stored
 	 *
 	 * @return  void
 	 */
 	protected function scanComponent($mainRoot)
 	{
 		// Get the root folder of the component translations
-		$root = realpath($mainRoot . '/component');
+		$root = realpath($mainRoot . '/component/language');
 
 		// Make sure the directory exists
 		if (empty($root) || !is_dir($root))
@@ -316,7 +295,7 @@ class AkeebaRelinkLanguage
 		{
 			foreach ($allAliases as $alias)
 			{
-				// Get the possible language root e.g. /repodir/translation/component/frontend
+				// Get the possible language root e.g. /repodir/component/language/frontend
 				$langRoot = realpath($root . '/' . $alias);
 
 				// Make sure the directory exists
@@ -334,7 +313,7 @@ class AkeebaRelinkLanguage
 						continue;
 					}
 
-					// e.g. $this->sources['site']['en-GB'] =  /repodir/translation/component/frontend/en-GB
+					// e.g. $this->sources['site']['en-GB'] =  /repodir/component/language/frontend/en-GB
 					if (!isset($this->sources[$siteSide][$directory->getFilename()]))
 					{
 						$this->sources[$siteSide][$directory->getFilename()] = [];
@@ -349,14 +328,14 @@ class AkeebaRelinkLanguage
 	/**
 	 * Scan for AWF-based component translations
 	 *
-	 * @param   string  $mainRoot  The top-level directory where all of extension translations are stored
+	 * @param   string $mainRoot The top-level directory where all of extension translations are stored
 	 *
 	 * @return  void
 	 */
 	protected function scanAwfComponent($mainRoot)
 	{
 		// Get the root folder of the component translations
-		$root = realpath($mainRoot);
+		$root = realpath($mainRoot) . '/app/languages';
 
 		// Make sure the directory exists
 		if (empty($root) || !is_dir($root))
@@ -385,8 +364,8 @@ class AkeebaRelinkLanguage
 				continue;
 			}
 
-			$langRoot      = realpath($root . '/' . $directoryName);
-			$di            = new DirectoryIterator($langRoot);
+			$langRoot = realpath($root . '/' . $directoryName);
+			$di       = new DirectoryIterator($langRoot);
 
 			foreach ($di as $directory)
 			{
@@ -409,7 +388,7 @@ class AkeebaRelinkLanguage
 	/**
 	 * Scan for module translations
 	 *
-	 * @param   string  $mainRoot  The top-level directory where all of extension translations are stored
+	 * @param   string $mainRoot The top-level directory where all of extension translations are stored
 	 *
 	 * @return  void
 	 */
@@ -429,7 +408,7 @@ class AkeebaRelinkLanguage
 		{
 			foreach ($allAliases as $alias)
 			{
-				// Get the possible language root e.g. /repodir/translation/component/frontend
+				// Get the possible language root e.g. /repodir/modules/site
 				$langRoot = realpath($root . '/' . $alias);
 
 				// Make sure the directory exists
@@ -447,17 +426,18 @@ class AkeebaRelinkLanguage
 						continue;
 					}
 
-					$moduleRoot = $directory->getPathname();
-					$moduleDI = new DirectoryIterator($moduleRoot);
+					// e.g. /repodir/modules/site/foobar/language
+					$moduleRoot = $directory->getPathname() . '/language';
+					$moduleDI   = new DirectoryIterator($moduleRoot);
 
-					foreach($moduleDI as $moduleLangDir)
+					foreach ($moduleDI as $moduleLangDir)
 					{
 						if ($moduleLangDir->isDot() || !$moduleLangDir->isDir())
 						{
 							continue;
 						}
 
-						// e.g. $this->sources['site']['en-GB'] =  /repodir/translation/modules/site/foobar/en-GB
+						// e.g. $this->sources['site']['en-GB'] =  /repodir/modules/site/foobar/language/en-GB
 						if (!isset($this->sources[$siteSide][$moduleLangDir->getFilename()]))
 						{
 							$this->sources[$siteSide][$moduleLangDir->getFilename()] = [];
@@ -473,7 +453,7 @@ class AkeebaRelinkLanguage
 	/**
 	 * Scan for plugin translations
 	 *
-	 * @param   string  $mainRoot  The top-level directory where all of extension translations are stored
+	 * @param   string $mainRoot The top-level directory where all of extension translations are stored
 	 *
 	 * @return  void
 	 */
@@ -491,16 +471,16 @@ class AkeebaRelinkLanguage
 		// Go through all plugin folders
 		$folderDI = new DirectoryIterator($root);
 
-		foreach($folderDI as $folder)
+		foreach ($folderDI as $folder)
 		{
 			if ($folder->isDot() || !$folder->isDir())
 			{
 				continue;
 			}
 
-			// e.g. /repodir/translation/plugins/system
+			// e.g. /repodir/plugins/system
 			$folderPath = $folder->getPathname();
-			$pluginsDI = new DirectoryIterator($folderPath);
+			$pluginsDI  = new DirectoryIterator($folderPath);
 
 			// Go through all plugins
 			foreach ($pluginsDI as $plugin)
@@ -510,9 +490,9 @@ class AkeebaRelinkLanguage
 					continue;
 				}
 
-				// e.g. /repodir/translation/plugins/system/foobar
-				$pluginPath = $plugin->getPathname();
-				$langsDI = new DirectoryIterator($pluginPath);
+				// e.g. /repodir/translation/plugins/system/foobar/language
+				$pluginPath = $plugin->getPathname() . '/language';
+				$langsDI    = new DirectoryIterator($pluginPath);
 
 				foreach ($langsDI as $langDir)
 				{
@@ -521,11 +501,12 @@ class AkeebaRelinkLanguage
 						continue;
 					}
 
-					// e.g. $this->sources['site']['en-GB'] =  /repodir/translation/plugins/system/foobar/en-GB
+					// e.g. $this->sources['site']['en-GB'] =  /repodir/translation/plugins/system/foobar/language/en-GB
 					if (!isset($this->sources['admin'][$langDir->getFilename()]))
 					{
 						$this->sources['admin'][$langDir->getFilename()] = [];
 					}
+
 					$this->sources['admin'][$langDir->getFilename()][] = $langDir->getPathname();
 				}
 			}
@@ -558,7 +539,7 @@ class AkeebaRelinkLanguage
 		// Then, remove site languages with no translation sources
 		$newSiteLanguages = [];
 
-		foreach($this->siteLanguages as $siteSite => $languages)
+		foreach ($this->siteLanguages as $siteSite => $languages)
 		{
 			$newSiteLanguages[$siteSide] = [];
 
@@ -578,8 +559,8 @@ class AkeebaRelinkLanguage
 	{
 		// Get the paths of all the files to symlink
 		$targetPaths = [
-			'site'	=> $this->siteRoot . '/language',
-			'admin'	=> $this->siteRoot . '/administrator/language',
+			'site'  => $this->siteRoot . '/language',
+			'admin' => $this->siteRoot . '/administrator/language',
 		];
 
 		$filesToLink = [];
@@ -588,7 +569,7 @@ class AkeebaRelinkLanguage
 		{
 			$siteSideRoot = $targetPaths[$siteSide];
 
-			foreach($languages as $language => $sourceDirectories)
+			foreach ($languages as $language => $sourceDirectories)
 			{
 				$targetLanguageDirectory = $siteSideRoot . '/' . $language;
 
@@ -608,9 +589,11 @@ class AkeebaRelinkLanguage
 							continue;
 						}
 
-						$sourcePath = $file->getPathname();
-						$targetPath = $targetLanguageDirectory . '/' . $file->getFilename();
-						$filesToLink[$sourcePath] = $targetPath;
+						$sourcePath               = $file->getPathname();
+						$targetPath               = $targetLanguageDirectory . '/' . $file->getFilename();
+						$baseDir                  = realpath(dirname($targetPath));
+						$baseName                 = basename($targetPath);
+						$filesToLink[$sourcePath] = $baseDir . DIRECTORY_SEPARATOR . $baseName;
 					}
 				}
 			}
@@ -640,7 +623,7 @@ class AkeebaRelinkLanguage
 		{
 			if (isLink($file) || is_file($file))
 			{
-				@unlink(realpath2($file));
+				@unlink($file);
 			}
 		}
 	}
