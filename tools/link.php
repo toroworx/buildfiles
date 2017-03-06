@@ -1,219 +1,24 @@
 <?php
 /**
- * Akeeba Build Tools - Internal Linker
- * Copyright (c)2010-2017 Akeeba Ltd
+ * Akeeba Build Tools
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Internal linker script
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * @package     buildfiles
- * @subpackage  tools
- * @license     GPL v3
+ * @package        buildfiles
+ * @license        GPL v3
+ * @copyright      2010-2017 Akeeba Ltd
  */
 
-// Internal linking script
 $hardlink_files = array();
-
 $symlink_files = array();
-
 $symlink_folders = array();
 
-define('IS_WINDOWS', substr(PHP_OS, 0, 3) == 'WIN');
 
-function TranslateWinPath($p_path)
-{
-	$is_unc = false;
-
-	if (IS_WINDOWS)
-	{
-		// Is this a UNC path?
-		$is_unc = (substr($p_path, 0, 2) == '\\\\') || (substr($p_path, 0, 2) == '//');
-		// Change potential windows directory separator
-		if ((strpos($p_path, '\\') > 0) || (substr($p_path, 0, 1) == '\\'))
-		{
-			$p_path = strtr($p_path, '\\', '/');
-		}
-	}
-
-	// Remove multiple slashes
-	$p_path = str_replace('///', '/', $p_path);
-	$p_path = str_replace('//', '/', $p_path);
-
-	// Fix UNC paths
-	if ($is_unc)
-	{
-		$p_path = '//' . ltrim($p_path, '/');
-	}
-
-	return $p_path;
-}
-
-function doLink($from, $to, $type = 'symlink', $path)
-{
-	$realTo   = $path . '/' . $to;
-	$realFrom = $path . '/' . $from;
-
-	if (IS_WINDOWS)
-	{
-		// Windows doesn't play nice with paths containing UNIX path separators
-		$realTo   = TranslateWinPath($realTo);
-		$realFrom = TranslateWinPath($realFrom);
-		// Windows doesn't play nice with relative paths in symlinks
-		$realFrom = realpath($realFrom);
-	}
-	elseif ($type == 'symlink')
-	{
-		// Um, that seems to be the simplest way?
-		$realFrom = realpath($realFrom);
-
-		// No idea what I was trying to do here
-		/**
-		$parts  = explode('/', $to);
-		$prefix = '';
-
-		for ($i = 0; $i < count($parts) - 1; $i++)
-		{
-			$prefix .= '../';
-		}
-
-		$realFrom = $prefix . $from;
-		/**/
-	}
-
-	if (is_file($realTo) || is_dir($realTo) || is_link($realTo) || file_exists($realTo))
-	{
-		if (IS_WINDOWS && is_dir($realTo))
-		{
-			// Windows can't unlink() directory symlinks; it needs rmdir() to be used instead
-			$res = @rmdir($realTo);
-		}
-		else
-		{
-			$res = @unlink($realTo);
-		}
-
-		// Invalid symlinks are not reported as directories but require @rmdir to delete them because FREAKING WINDOWS.
-		if (!$res && IS_WINDOWS)
-		{
-			$res = @rmdir($realTo);
-		}
-
-		if (!$res && is_dir($realTo))
-		{
-			// This is an actual directory, not an old symlink
-			$res = recursiveUnlink($realTo);
-		}
-
-		if (!$res)
-		{
-			echo "FAILED UNLINK  : $realTo\n";
-
-			return;
-		}
-	}
-
-	if ($type == 'symlink')
-	{
-		if (IS_WINDOWS)
-		{
-			$extraArguments = '';
-
-			if (is_dir($realFrom))
-			{
-				$extraArguments = ' /D ';
-			}
-
-			$relativeFrom = getRelativePath($realTo, $realFrom);
-			$cmd = 'mklink ' . $extraArguments . ' "' . $realTo . '" "' . $relativeFrom . '"';
-			$res = exec($cmd);
-		}
-		else
-		{
-			$relativeFrom = getRelativePath($realTo, $realFrom);
-			$res = @symlink($relativeFrom, $realTo);
-		}
-	}
-	elseif ($type == 'link')
-	{
-		$res = @link($realFrom, $realTo);
-	}
-
-	if (!$res)
-	{
-		if ($type == 'symlink')
-		{
-			echo "FAILED SYMLINK : $realTo\n";
-		}
-		elseif ($type == 'link')
-		{
-			echo "FAILED LINK    : $realTo\n";
-		}
-	}
-}
-
-function recursiveUnlink($dir)
-{
-	$return = true;
-
-	try
-	{
-		$dh = new DirectoryIterator($dir);
-
-		foreach ($dh as $file)
-		{
-			if ($file->isDot())
-			{
-				continue;
-			}
-
-			if ($file->isDir())
-			{
-				// We have to try the rmdir in case this is a Windows directory symlink OR an empty folder.
-				$deleteFolderResult = @rmdir($file->getPathname());
-
-				// If rmdir failed (non-empty, real folder) we have to recursively delete it
-				if (!$deleteFolderResult)
-				{
-					$deleteFolderResult = recursiveUnlink($file->getPathname());
-					$return             = $return && $deleteFolderResult;
-				}
-
-				if (!$deleteFolderResult)
-				{
-					// echo "  Failed deleting folder {$file->getPathname()}\n";
-				}
-			}
-
-			// We have to try the rmdir in case this is a Windows directory symlink.
-			$deleteFileResult = @rmdir($file->getPathname()) || @unlink($file->getPathname());
-			$return           = $return && $deleteFileResult;
-
-			if (!$deleteFileResult)
-			{
-				// echo "  Failed deleting file {$file->getPathname()}\n";
-			}
-		}
-
-		$return = $return && @rmdir($dir);
-
-		return $return;
-	}
-	catch (Exception $e)
-	{
-		return false;
-	}
-}
-
+/**
+ * Display the usage of this tool
+ *
+ * @return  void
+ */
 function showUsage()
 {
 	$file = basename(__FILE__);
@@ -225,47 +30,6 @@ Usage:
 ENDUSAGE;
 }
 
-function getRelativePath($from, $to)
-{
-	// some compatibility fixes for Windows paths
-	$from = is_dir($from) ? rtrim($from, '\/') . '/' : $from;
-	$to   = is_dir($to) ? rtrim($to, '\/') . '/' : $to;
-	$from = str_replace('\\', '/', $from);
-	$to   = str_replace('\\', '/', $to);
-
-	$from    = explode('/', $from);
-	$to      = explode('/', $to);
-	$relPath = $to;
-
-	foreach ($from as $depth => $dir)
-	{
-		// find first non-matching dir
-		if ($dir === $to[$depth])
-		{
-			// ignore this directory
-			array_shift($relPath);
-		}
-		else
-		{
-			// get number of remaining dirs to $from
-			$remaining = count($from) - $depth;
-			if ($remaining > 1)
-			{
-				// add traversals up to first matching dir
-				$padLength = (count($relPath) + $remaining - 1) * -1;
-				$relPath   = array_pad($relPath, $padLength, '..');
-				break;
-			}
-			else
-			{
-				$relPath[0] = '.' . DIRECTORY_SEPARATOR . $relPath[0];
-			}
-		}
-	}
-
-	return implode(DIRECTORY_SEPARATOR, $relPath);
-}
-
 if (!isset($repoRoot))
 {
 	$year = gmdate('Y');
@@ -273,7 +37,7 @@ if (!isset($repoRoot))
 Akeeba Build Tools - Linker
 Internal file and directory symlinker
 -------------------------------------------------------------------------------
-Copyright ©2010-$year Nicholas K. Dionysopoulos / AkeebaBackup.com
+Copyright ©2010-$year Akeeba Ltd
 Distributed under the GNU General Public License v3 or later
 -------------------------------------------------------------------------------
 
