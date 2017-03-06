@@ -42,6 +42,13 @@ class ProjectLinker
 	private $repositoryRoot = '';
 
 	/**
+	 * Output verbosity level. 0 = none; 1 (default) = minimal; 2 = each linked file / folder.
+	 *
+	 * @var  int
+	 */
+	private $verbosityLevel = 1;
+
+	/**
 	 * ProjectLinker constructor.
 	 *
 	 * If $path is a directory it is assumed to be the repository. If it's a file we assume the repository is two levels
@@ -105,6 +112,73 @@ class ProjectLinker
 
 		$this->loadConfig($file);
 		$this->setRepositoryRoot($path);
+	}
+
+	public function link()
+	{
+		if (empty($this->repositoryRoot) || !is_dir($this->repositoryRoot))
+		{
+			throw new \RuntimeException("You need to specify a valid repository root");
+		}
+
+		if (empty($this->hardlink_files) && empty($this->symlink_files) && empty($this->symlink_folders))
+		{
+			throw new \RuntimeException("You need to specify some files to link");
+		}
+
+		if (!empty($this->hardlink_files))
+		{
+			if ($this->verbosityLevel)
+			{
+				echo "Hard linking files...\n";
+			}
+
+			foreach ($this->hardlink_files as $from => $to)
+			{
+				if ($this->verbosityLevel >= 2)
+				{
+					echo "-- $from => $to";
+				}
+
+				LinkHelper::makeLink($from, $to, 'link', $this->repositoryRoot);
+			}
+		}
+
+		if (!empty($this->symlink_files))
+		{
+			if ($this->verbosityLevel)
+			{
+				echo "Symlinking files...\n";
+			}
+
+			foreach ($this->symlink_files as $from => $to)
+			{
+				if ($this->verbosityLevel >= 2)
+				{
+					echo "-- $from => $to";
+				}
+
+				LinkHelper::makeLink($from, $to, 'symlink', $this->repositoryRoot);
+			}
+		}
+
+		if (!empty($this->symlink_folders))
+		{
+			if ($this->verbosityLevel)
+			{
+				echo "Symlinking folders...\n";
+			}
+
+			foreach ($this->symlink_folders as $from => $to)
+			{
+				if ($this->verbosityLevel >= 2)
+				{
+					echo "-- $from => $to";
+				}
+
+				LinkHelper::makeLink($from, $to, 'symlink', $this->repositoryRoot);
+			}
+		}
 	}
 
 	/**
@@ -229,6 +303,20 @@ class ProjectLinker
 		}
 
 		$this->repositoryRoot = $repositoryRoot;
+
+		return $this;
+	}
+
+	/**
+	 * Set the output verbosity level. 0 = none; 1 (default) = minimal; 2 = each linked file / folder.
+	 *
+	 * @param   int  $verbosityLevel
+	 *
+	 * @return  ProjectLinker
+	 */
+	public function setVerbosityLevel(int $verbosityLevel)
+	{
+		$this->verbosityLevel = $verbosityLevel;
 
 		return $this;
 	}
