@@ -21,152 +21,6 @@
  * @license     GPL v3
  */
 
-if (stristr(php_uname(), 'windows'))
-{
-	define('AKEEBA_RELINK_WINDOWS', 1);
-}
-
-/**
- * Is this path a symlink?
- *
- * @param   string $path The path to test
- *
- * @return  bool  True if it is a symlink
- */
-function isLink($path)
-{
-	if (defined('AKEEBA_RELINK_WINDOWS'))
-	{
-		return file_exists($path);
-	}
-	else
-	{
-		return is_link($path);
-	}
-}
-
-/**
- * Create a directory symlink
- *
- * @param   string $from Directory which already exists
- * @param   string $to   Path to the symlink we'll create
- *
- * @return  void
- */
-function symlink_dir($from, $to)
-{
-	if (is_dir($to))
-	{
-		if (defined('AKEEBA_RELINK_WINDOWS'))
-		{
-			$cmd = 'rmdir /s /q "' . $to . '"';
-		}
-		else
-		{
-			$cmd = 'rm -rf "' . $to . '"';
-		}
-		exec($cmd);
-	}
-
-	if (defined('AKEEBA_RELINK_WINDOWS'))
-	{
-		$cmd = 'mklink /D "' . $to . '" "' . $from . '"';
-		exec($cmd);
-	}
-	else
-	{
-		@symlink($from, $to);
-	}
-}
-
-/**
- * Create a file symlink
- *
- * @param   string $from File which already exists
- * @param   string $to   Path to the symlink we'll create
- *
- * @return  void
- */
-function symlink_file($from, $to)
-{
-	if (file_exists($to) || is_link($to))
-	{
-		if (defined('AKEEBA_RELINK_WINDOWS'))
-		{
-			$cmd = 'del /f /q "' . $to . '"';
-		}
-		else
-		{
-			$cmd = 'rm -f "' . $to . '"';
-		}
-		exec($cmd);
-	}
-
-	if (defined('AKEEBA_RELINK_WINDOWS'))
-	{
-		$cmd = 'mklink "' . $to . '" "' . $from . '"';
-		exec($cmd);
-	}
-	else
-	{
-		@symlink($from, $to);
-	}
-}
-
-/**
- * Create a file hardlink
- *
- * @param   string $from File which already exists
- * @param   string $to   Path to the hardlink we'll create
- *
- * @return  void
- */
-function hardlink_file($from, $to)
-{
-	if (file_exists($to))
-	{
-		if (defined('AKEEBA_RELINK_WINDOWS'))
-		{
-			$cmd = 'del /f /q "' . $to . '"';
-		}
-		else
-		{
-			$cmd = 'rm -f "' . $to . '"';
-		}
-		exec($cmd);
-	}
-
-	if (defined('AKEEBA_RELINK_WINDOWS'))
-	{
-		$cmd = 'mklink /H "' . $to . '" "' . $from . '"';
-		exec($cmd);
-	}
-	else
-	{
-		@link($from, $to);
-	}
-}
-
-/**
- * Required on Windows to turn all forward slashes to backslashes and, conversely, when on Linux / Mac OS X convert all
- * backslashes to slashes.
- *
- * @param   string $path The path to convert
- *
- * @return  string  The converted path
- */
-function realpath2($path)
-{
-	if (defined('AKEEBA_RELINK_WINDOWS'))
-	{
-		return str_replace('/', '\\', $path);
-	}
-	else
-	{
-		return str_replace('\\', '/', $path);
-	}
-}
-
 class AkeebaRelinkLanguage
 {
 	/** @var string The path to the sources */
@@ -195,8 +49,6 @@ class AkeebaRelinkLanguage
 	 * Public constructor. Initialises the class with the user-supplied information.
 	 *
 	 * @param   array $config Configuration parameters. We need root and site.
-	 *
-	 * @return  AkeebaRelinkLanguage
 	 */
 	public function __construct($config = array())
 	{
@@ -204,6 +56,7 @@ class AkeebaRelinkLanguage
 		{
 			$config['root'] = dirname(__FILE__);
 		}
+
 		if (!array_key_exists('site', $config))
 		{
 			$config['site'] = '/Users/nicholas/Sites/jbeta';
