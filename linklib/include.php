@@ -11,6 +11,31 @@ namespace Akeeba\LinkLibrary;
 
 use Composer\Autoload\ClassLoader;
 
+if (version_compare(PHP_VERSION, '7.0', 'lt'))
+{
+	echo <<< END
+
+********************************************************************************
+**                                   WARNING                                  **
+********************************************************************************
+
+The link library REQUIRES PHP 7.0 or later.
+
+--------------------------------------------------------------------------------
+HOW TO FIX
+--------------------------------------------------------------------------------
+
+Use your PHP 7 binary to run the Build Files tools
+
+- or -
+
+Make PHP 7 your default PHP CLI version (recommended)
+
+END;
+
+	throw new \RuntimeException("Composer is not initialized in the buildfiles repository");
+}
+
 $autoloaderFile = __DIR__ . '/../vendor/autoload.php';
 
 if (!file_exists($autoloaderFile))
