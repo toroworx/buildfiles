@@ -84,4 +84,12 @@ interface ScannerInterface
 	 * @return  void
 	 */
 	public function relink();
+
+	/**
+	 * Get a unique extension name. For modules and templates this includes the indicator site_ or admin_ before the
+	 * actual name of the extension.
+	 *
+	 * @return  string
+	 */
+	public function getKeyName();
 }

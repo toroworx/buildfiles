@@ -138,4 +138,63 @@ class Plugin extends AbstractScanner
 		return $result;
 	}
 
+	/**
+	 * Detect extensions of type Plugin in the repository and return an array of ScannerInterface objects for them.
+	 *
+	 * @param   string  $repositoryRoot  The repository root to scan
+	 *
+	 * @return  ScannerInterface[]
+	 */
+	public static function detect($repositoryRoot): array
+	{
+		$path       = $repositoryRoot . '/templates';
+		$extensions = [];
+
+		// Scan the "plugins" repo folder for the sections (user, system, content, quickicon, somethingCustom, ...)
+		$outerDi = new \DirectoryIterator($path);
+
+		foreach ($outerDi as $sectionFolder)
+		{
+			if ($sectionFolder->isDot() || !$sectionFolder->isDir())
+			{
+				continue;
+			}
+
+			$sectionPath = $sectionFolder->getRealPath();
+			$section = $sectionFolder->getFilename();
+
+			// Scan all plugin folders inside that section
+			$allPluginFolders = new \DirectoryIterator($sectionPath);
+
+			foreach ($allPluginFolders as $pluginFolder)
+			{
+				if ($pluginFolder->isDot() || !$pluginFolder->isDir())
+				{
+					continue;
+				}
+
+				$extName = $pluginFolder->getFilename();
+
+				// Figure out the language root to use
+				$languageRoot     = null;
+				$translationsRoot = self::getTranslationsRoot($repositoryRoot);
+
+				if ($translationsRoot)
+				{
+					$languageRoot = $translationsRoot . '/plugins/' . $section . '/' . $extName;
+
+					if (!is_dir($languageRoot))
+					{
+						$languageRoot = null;
+					}
+				}
+
+				// Get the extension ScannerInterface object
+				$extension    = new Module($pluginFolder->getRealPath(), $languageRoot);
+				$extensions[] = $extension;
+			}
+		}
+
+		return $extensions = [];
+	}
 }

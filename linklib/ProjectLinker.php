@@ -1,9 +1,10 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: nicholas
- * Date: 6/3/2017
- * Time: 4:33 μμ
+ * Akeeba Build Tools
+ *
+ * @package        buildfiles
+ * @license        GPL v3
+ * @copyright      2010-2017 Akeeba Ltd
  */
 
 namespace Akeeba\LinkLibrary;

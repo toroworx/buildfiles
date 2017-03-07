@@ -149,4 +149,61 @@ class Template extends AbstractScanner
 		return $result;
 	}
 
+	/**
+	 * Detect extensions of type Template in the repository and return an array of ScannerInterface objects for them.
+	 *
+	 * @param   string  $repositoryRoot  The repository root to scan
+	 *
+	 * @return  ScannerInterface[]
+	 */
+	public static function detect($repositoryRoot): array
+	{
+		$path       = $repositoryRoot . '/templates';
+		$sections   = ['site', 'admin'];
+		$extensions = [];
+
+		// Loop both sections (site and admin)
+		foreach ($sections as $section)
+		{
+			$sectionPath = $path . '/' . $section;
+
+			if (!is_dir($sectionPath))
+			{
+				continue;
+			}
+
+			// Loop all templates in the section
+			$di = new \DirectoryIterator($sectionPath);
+
+			foreach ($di as $folder)
+			{
+				if ($folder->isDot() || !$folder->isDir())
+				{
+					continue;
+				}
+
+				$extName = $folder->getFilename();
+
+				// Figure out the language root to use
+				$languageRoot     = null;
+				$translationsRoot = self::getTranslationsRoot($repositoryRoot);
+
+				if ($translationsRoot)
+				{
+					$languageRoot = $translationsRoot . '/templates/' . $section . '/' . $extName;
+
+					if (!is_dir($languageRoot))
+					{
+						$languageRoot = null;
+					}
+				}
+
+				// Get the extension ScannerInterface object
+				$extension    = new Module($folder->getRealPath(), $languageRoot);
+				$extensions[] = $extension;
+			}
+		}
+
+		return $extensions = [];
+	}
 }

@@ -68,6 +68,13 @@ abstract class AbstractScanner implements ScannerInterface
 	private $mapResult = null;
 
 	/**
+	 * The root folder of the translation files (other than inside the extension itself, holding all languages)
+	 *
+	 * @var  string
+	 */
+	private static $translationsRoot = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * The languageRoot is optional and applies only if the languages are stored in a directory other than the one
@@ -78,6 +85,7 @@ abstract class AbstractScanner implements ScannerInterface
 	 */
 	public function __construct($extensionRoot, $languageRoot = null)
 	{
+		// Make sure the extension root exists
 		if (!is_dir($extensionRoot) || !is_readable($extensionRoot))
 		{
 			throw new RuntimeException("Cannot scan extension in non-existent or unreadable folder $this->extensionRoot");
@@ -85,6 +93,7 @@ abstract class AbstractScanner implements ScannerInterface
 
 		$this->extensionRoot = $extensionRoot;
 
+		// Make sure the language root exists
 		if (!empty($languageRoot))
 		{
 			$this->languageRoot = $languageRoot;
@@ -94,6 +103,9 @@ abstract class AbstractScanner implements ScannerInterface
 				throw new RuntimeException("Cannot scan translations in non-existent or unreadable folder $this->extensionRoot");
 			}
 		}
+
+		// Scan the extension immediately
+		$this->getScanResults();
 	}
 
 	/**
@@ -437,4 +449,69 @@ abstract class AbstractScanner implements ScannerInterface
 
 		return $result;
 	}
+
+	/**
+	 * Get a unique extension name. For modules and templates this includes the indicator site_ or admin_ before the
+	 * actual name of the extension.
+	 *
+	 * @return  string
+	 */
+	public final function getKeyName()
+	{
+		return $this->getScanResults()->getJoomlaExtensionName(true);
+	}
+
+
+	/**
+	 * Get the root folder for the translation files in all languages. This is a directory in the root of the repository
+	 * called "translations". Inside it you have all language files using the following structure:
+	 *
+	 * component
+	 *      frontend
+	 *          en-GB, ...
+	 *      backend
+	 *          en-GB, ...
+	 * plugins
+	 *      somePluginFolder
+	 *          pluginName
+	 *              en-GB, ...
+	 *          otherPlugins...
+	 *      otherPluginFolders...
+	 * modules
+	 *      site
+	 *          frontendModuleName
+	 *              en-GB, ...
+	 *          otherFrontendModules,...
+	 *      admin
+	 *          frontendModuleName
+	 *              en-GB, ...
+	 *          otherFrontendModules,...
+	 *
+	 * @param   string  $siteRoot  The site root to check for the translations root
+	 *
+	 * @return  string
+	 */
+	protected static function getTranslationsRoot(string $siteRoot): string
+	{
+		if (is_null(self::$translationsRoot))
+		{
+			self::$translationsRoot = '';
+			$possibleFolders        = ['translations', 'translation', 'languages'];
+
+			foreach ($possibleFolders as $folder)
+			{
+				$path = $siteRoot . '/' . $folder;
+
+				if (is_dir($path))
+				{
+					self::$translationsRoot = $path;
+
+					break;
+				}
+			}
+		}
+
+		return self::$translationsRoot;
+	}
+
 }

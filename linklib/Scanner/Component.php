@@ -49,7 +49,7 @@ class Component extends AbstractScanner
 			throw new RuntimeException("Cannot get XML manifest for component in {$this->extensionRoot}");
 		}
 
-		// Intiialize the result
+		// Initialize the result
 		$result                = new ScanResult();
 		$result->extensionType = 'component';
 
@@ -177,6 +177,43 @@ class Component extends AbstractScanner
 		$result->dirs = array_merge($result->dirs, $dirs);
 
 		return $result;
+	}
+
+	/**
+	 * Detect extensions of type Component in the repository and return an array of ScannerInterface objects for them.
+	 *
+	 * @param   string  $repositoryRoot  The repository root to scan
+	 *
+	 * @return  ScannerInterface[]
+	 */
+	public static function detect(string $repositoryRoot): array
+	{
+		// Components are always in one specific path
+		$path = $repositoryRoot . '/component';
+
+		if (!is_dir($path))
+		{
+			return [];
+		}
+
+		// Figure out the language root to use
+		$languageRoot     = null;
+		$translationsRoot = self::getTranslationsRoot($repositoryRoot);
+
+		if ($translationsRoot)
+		{
+			$languageRoot = $translationsRoot . '/component';
+
+			if (!is_dir($languageRoot))
+			{
+				$languageRoot = null;
+			}
+		}
+
+		// Get the extension ScannerInterface object
+		$extension          = new Component($path, $languageRoot);
+
+		return [$extension];
 	}
 
 }

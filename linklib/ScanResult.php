@@ -147,6 +147,8 @@ final class ScanResult
 	 *                                   the name to indicate if they are meant to be installed in front- or backend of
 	 *                                   the site respectively. This is non-canonical to how Joomla! extensions are
 	 *                                   typically named.
+	 *
+	 * @return  string;
 	 */
 	public function getJoomlaExtensionName($includeSiteAdmin = false)
 	{
@@ -200,5 +202,7 @@ final class ScanResult
 				$prefix = 'file_';
 				break;
 		}
+
+		return $prefix . $this->extension;
 	}
 }
