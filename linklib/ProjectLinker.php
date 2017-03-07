@@ -78,6 +78,8 @@ class ProjectLinker
 	 * path.
 	 *
 	 * @param   string  $path  The path to the repository root
+	 *
+	 * @return  void
 	 */
 	public function setUpWithPath($path)
 	{
@@ -99,6 +101,8 @@ class ProjectLinker
 	 * An assumption is made that the repository root is two levels above the file.
 	 *
 	 * @param   string  $file  The full path to the link.php setup file.
+	 *
+	 * @return  void
 	 */
 	public function setUpWithFile($file)
 	{
@@ -114,6 +118,11 @@ class ProjectLinker
 		$this->setRepositoryRoot($path);
 	}
 
+	/**
+	 * Applies the internal linking
+	 *
+	 * @return  void
+	 */
 	public function link()
 	{
 		if (empty($this->repositoryRoot) || !is_dir($this->repositoryRoot))
@@ -188,7 +197,7 @@ class ProjectLinker
 	 *
 	 * @return  ProjectLinker
 	 */
-	public function loadConfig($file)
+	public function loadConfig(string $file): ProjectLinker
 	{
 		if (!file_exists($file) || !is_file($file))
 		{
@@ -217,7 +226,7 @@ class ProjectLinker
 	 *
 	 * @return  array
 	 */
-	public function getHardlinkFiles()
+	public function getHardlinkFiles(): array
 	{
 		return $this->hardlink_files;
 	}
@@ -229,7 +238,7 @@ class ProjectLinker
 	 *
 	 * @return  ProjectLinker
 	 */
-	public function setHardlinkFiles(array $hardlink_files)
+	public function setHardlinkFiles(array $hardlink_files): ProjectLinker
 	{
 		$this->hardlink_files = $hardlink_files;
 
@@ -241,17 +250,19 @@ class ProjectLinker
 	 *
 	 * @return  array
 	 */
-	public function getSymlinkFiles()
+	public function getSymlinkFiles(): array
 	{
 		return $this->symlink_files;
 	}
 
 	/**
-	 * @param array $symlink_files
+	 * Set the symbolic link files
 	 *
-	 * @return ProjectLinker
+	 * @param   array  $symlink_files
+	 *
+	 * @return  ProjectLinker
 	 */
-	public function setSymlinkFiles($symlink_files)
+	public function setSymlinkFiles($symlink_files): ProjectLinker
 	{
 		$this->symlink_files = $symlink_files;
 
@@ -259,19 +270,23 @@ class ProjectLinker
 	}
 
 	/**
-	 * @return array
+	 * Get the symbolic link folders
+	 *
+	 * @return  array
 	 */
-	public function getSymlinkFolders()
+	public function getSymlinkFolders(): array
 	{
 		return $this->symlink_folders;
 	}
 
 	/**
-	 * @param array $symlink_folders
+	 * Set the symbolic link folders
 	 *
-	 * @return ProjectLinker
+	 * @param   array  $symlink_folders
+	 *
+	 * @return  ProjectLinker
 	 */
-	public function setSymlinkFolders($symlink_folders)
+	public function setSymlinkFolders($symlink_folders): ProjectLinker
 	{
 		$this->symlink_folders = $symlink_folders;
 
@@ -283,7 +298,7 @@ class ProjectLinker
 	 *
 	 * @return  string
 	 */
-	public function getRepositoryRoot()
+	public function getRepositoryRoot(): string
 	{
 		return $this->repositoryRoot;
 	}
@@ -295,7 +310,7 @@ class ProjectLinker
 	 *
 	 * @return  ProjectLinker
 	 */
-	public function setRepositoryRoot($repositoryRoot)
+	public function setRepositoryRoot($repositoryRoot): string
 	{
 		if (!is_dir($repositoryRoot))
 		{
@@ -314,7 +329,7 @@ class ProjectLinker
 	 *
 	 * @return  ProjectLinker
 	 */
-	public function setVerbosityLevel(int $verbosityLevel)
+	public function setVerbosityLevel(int $verbosityLevel): ProjectLinker
 	{
 		$this->verbosityLevel = $verbosityLevel;
 
