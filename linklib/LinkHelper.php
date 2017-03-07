@@ -29,7 +29,7 @@ abstract class LinkHelper
 	 *
 	 * @return  bool
 	 */
-	private static function isWindows()
+	private static function isWindows(): bool
 	{
 		if (is_null(self::$isWindows))
 		{
@@ -46,7 +46,7 @@ abstract class LinkHelper
 	 *
 	 * @return  string
 	 */
-	public static function TranslateWinPath($path)
+	public static function TranslateWinPath(string $path): string
 	{
 		/** @var  bool  $is_unc  Is this a UNC (network share) path? */
 		$is_unc = false;
@@ -90,7 +90,7 @@ abstract class LinkHelper
 	 *
 	 * @throw   \RuntimeException  If the link ($to) cannot be created / replaced
 	 */
-	public static function makeLink($from, $to, $type = 'symlink', $path = null)
+	public static function makeLink(string $from, string $to, string $type = 'symlink', string $path = null)
 	{
 		$isWindows = self::isWindows();
 		$realTo    = $to;
@@ -191,7 +191,7 @@ abstract class LinkHelper
 	 *
 	 * @return  void
 	 */
-	public static function symlink($from, $to)
+	public static function symlink(string $from, string $to)
 	{
 		self::makeLink($from, $to, 'symlink');
 	}
@@ -207,7 +207,7 @@ abstract class LinkHelper
 	 *
 	 * @return  void
 	 */
-	public static function hardlink($from, $to)
+	public static function hardlink(string $from, string $to)
 	{
 		$linkType = 'link';
 
@@ -228,7 +228,7 @@ abstract class LinkHelper
 	 *
 	 * @return  bool  True on success
 	 */
-	public static function recursiveUnlink($dir)
+	public static function recursiveUnlink(string $dir): bool
 	{
 		$return = true;
 
@@ -289,7 +289,7 @@ abstract class LinkHelper
 	 *
 	 * @return  string  The relative path
 	 */
-	public static function getRelativePath($pathToConvert, $basePath)
+	public static function getRelativePath(string $pathToConvert, string $basePath): string
 	{
 		// Some compatibility fixes for Windows paths
 		$pathToConvert = is_dir($pathToConvert) ? rtrim($pathToConvert, '\/') . '/' : $pathToConvert;
