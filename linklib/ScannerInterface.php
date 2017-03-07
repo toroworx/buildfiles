@@ -44,7 +44,7 @@ interface ScannerInterface
 	/**
 	 * Scans the extension for files and folders to link
 	 *
-	 * @return  void
+	 * @return  ScanResult
 	 */
 	public function scan();
 
@@ -58,7 +58,7 @@ interface ScannerInterface
 	/**
 	 * Parses the last scan and generates a link map
 	 *
-	 * @return  void
+	 * @return  MapResult
 	 */
 	public function map();
 

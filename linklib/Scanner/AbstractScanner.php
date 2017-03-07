@@ -227,7 +227,7 @@ abstract class AbstractScanner implements ScannerInterface
 	{
 		if (empty($this->scanResult))
 		{
-			$this->scan();
+			$this->scanResult = $this->scan();
 		}
 
 		return $this->scanResult;
@@ -242,7 +242,7 @@ abstract class AbstractScanner implements ScannerInterface
 	{
 		if (empty($this->mapResult))
 		{
-			$this->map();
+			$this->mapResult = $this->map();
 		}
 
 		return $this->mapResult;
@@ -300,4 +300,141 @@ abstract class AbstractScanner implements ScannerInterface
 		}
 	}
 
+	/**
+	 * Scans a <language> node in the XML manifest and returns information about the languagess.
+	 *
+	 * @param   \DOMElement  $node  The node to scan
+	 *
+	 * @return  array
+	 */
+	protected final function scanLanguageNode(\DOMElement $node)
+	{
+		$return = array(
+			'folder' => $this->extensionRoot,
+			'files' => [],
+		);
+
+		if ($node->hasAttribute('folder'))
+		{
+			$return['folder'] .= '/' . $node->getAttribute('folder');
+		}
+
+		if ($node->hasChildNodes())
+		{
+			foreach ($node->childNodes as $langFile)
+			{
+				if (!($langFile instanceof \DOMElement))
+				{
+					continue;
+				}
+
+				$tag                           = $langFile->getAttribute('tag');
+
+				if (!isset($return['files'][$tag]))
+				{
+					$return['files'][$tag] = [];
+				}
+
+				$return['files'][$tag][] = $return['folder'] . '/' . $langFile->textContent;
+			}
+		}
+
+		return $return;
+	}
+
+	/**
+	 * Parses the last scan and generates a link map
+	 *
+	 * @return  MapResult
+	 */
+	public function map()
+	{
+		$scan = $this->getScanResults();
+
+		// Initialize
+		$hardfiles = [];
+		$files     = [];
+		$dirs      = [];
+
+		// Media directory
+		if ($scan->mediaFolder)
+		{
+			$destination = $this->siteRoot . '/media/' . $scan->getJoomlaExtensionName();
+
+			if (!empty($scan->mediaDestination))
+			{
+				$destination = $this->siteRoot . '/media/' . $scan->mediaDestination;
+			}
+
+			$dirs[$scan->mediaFolder] = $destination;
+		}
+
+		// CLI files
+		if ($scan->cliFolder)
+		{
+			foreach (new \DirectoryIterator($scan->cliFolder) as $fileInfo)
+			{
+				if ($fileInfo->isDot() || !$fileInfo->isFile())
+				{
+					continue;
+				}
+
+				if ($fileInfo->getExtension() != 'xml')
+				{
+					continue;
+				}
+
+				$hardfiles[$fileInfo->getRealPath()] = $this->siteRoot . '/cli/' . $fileInfo->getFilename();
+			}
+		}
+
+		// Front-end language files
+		if (!empty($scan->siteLangFiles))
+		{
+			$basePath = $this->siteRoot . '/language/';
+
+			foreach ($scan->siteLangFiles as $tag => $languageFiles)
+			{
+				$path = $basePath . $tag . '/';
+
+				if (!is_dir($path))
+				{
+					continue;
+				}
+
+				foreach ($languageFiles as $langFile)
+				{
+					$files[$langFile] = $path . basename($langFile);
+				}
+			}
+		}
+
+		// Back-end language files
+		if (!empty($scan->adminLangFiles))
+		{
+			$basePath = $this->siteRoot . '/administrator/language/';
+
+			foreach ($scan->adminLangFiles as $tag => $languageFiles)
+			{
+				$path = $basePath . $tag . '/';
+
+				if (!is_dir($path))
+				{
+					continue;
+				}
+
+				foreach ($languageFiles as $langFile)
+				{
+					$files[$langFile] = $path . basename($langFile);
+				}
+			}
+		}
+
+		$result            = new MapResult();
+		$result->dirs      = $dirs;
+		$result->files     = $files;
+		$result->hardfiles = $hardfiles;
+
+		return $result;
+	}
 }

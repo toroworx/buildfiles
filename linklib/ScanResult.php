@@ -71,6 +71,15 @@ final class ScanResult
 	public $mediaFolder = '';
 
 	/**
+	 * Name of the destination subdirectory of the media folder on the site.
+	 *
+	 * For example, if this is "foobar" then the media files will be stored on the site's "media/foobar" directory.
+	 *
+	 * @var  string
+	 */
+	public $mediaDestination = '';
+
+	/**
 	 * Absolute path to the folder containing the CLI files for the extension
 	 *
 	 * @var  string
