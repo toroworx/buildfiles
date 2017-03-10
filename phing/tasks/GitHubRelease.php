@@ -11,7 +11,7 @@
  *
  * See https://developer.github.com/v3/repos/releases/#create-a-release for information on properties.
  */
-class CreateReleaseTask extends GitHubTask
+class GitHubReleaseTask extends GitHubTask
 {
 	/**
 	 * Tag name upon which the release is made.
@@ -103,15 +103,51 @@ class CreateReleaseTask extends GitHubTask
 			$apiParameters[$apiParameter] = $this->$phingProperty;
 		}
 
-		$release = $this->client->api('repo')->releases()->create(
-			$this->organization,
-			$this->repository,
-			$apiParameters
-		);
-		$this->log(sprintf('Created release for tag %s (ID#: %d)', $release['tag_name'], $release['id']));
+		// Does the release exist?
+		$release = $this->getReleaseByTag($apiParameters['tagName']);
 
-		if (!empty($this->id))
+		if (empty($release))
 		{
+			$release = $this->createRelease($apiParameters);
+
+			$this->log(sprintf('Created release for tag %s (ID#: %d)', $release['tag_name'], $release['id']));
+		}
+		else
+		{
+			$this->log(sprintf('Found release for tag %s (ID#: %d)', $release['tag_name'], $release['id']));
+
+			// Do I have to edit the release?
+			$mustEdit = false;
+
+			foreach ($apiParameters as $key => $value)
+			{
+				if (!isset($release[$key]))
+				{
+					continue;
+				}
+
+				if ($release[$key] != $value)
+				{
+					$mustEdit = true;
+
+					break;
+				}
+			}
+
+			if (!$mustEdit)
+			{
+				$this->log('There is no need to edit the release; skipping');
+			}
+			else
+			{
+				$release = $this->editRelease($release['id'], $apiParameters);
+				$this->log(sprintf('Edited release for tag %s (ID#: %d)', $release['tag_name'], $release['id']));
+			}
+		}
+
+		if (!empty($this->propName))
+		{
+			$this->log(sprintf('Assigning release ID to property %s', $this->propName));
 			$this->project->setProperty($this->propName, $release['id']);
 		}
 	}
@@ -125,31 +161,49 @@ class CreateReleaseTask extends GitHubTask
 	 */
 	public function setTagName($tagName)
 	{
-		$this->checkForPrerelease($tagName);
-
 		$this->tagName = $tagName;
+
+		if ($this->isPrereleaseVersion($tagName))
+		{
+			$this->setPrerelease(true);
+		}
 	}
 
 	/**
-	 * @param string $commitsh
+	 * Set the commitish
+	 *
+	 * @param   string  $commitsh
+	 *
+	 * @return  void
 	 */
-	public function setCommit($commitsh)
+	public function setCommitish($commitsh)
 	{
 		$this->commitish = $commitsh;
 	}
 
 	/**
-	 * @param string $releaseName
+	 * Set the release name
+	 *
+	 * @param   string  $releaseName
+	 *
+	 * @return  void
 	 */
 	public function setReleaseName($releaseName)
 	{
-		$this->checkForPrerelease($releaseName);
-
 		$this->releaseName = $releaseName;
+
+		if ($this->isPrereleaseVersion($releaseName))
+		{
+			$this->setPrerelease(true);
+		}
 	}
 
 	/**
-	 * @param string $releaseBody
+	 * Set the release body
+	 *
+	 * @param   string  $releaseBody
+	 *
+	 * @return  void
 	 */
 	public function setReleaseBody($releaseBody)
 	{
@@ -157,7 +211,11 @@ class CreateReleaseTask extends GitHubTask
 	}
 
 	/**
-	 * @param boolean $draft
+	 * Set the draft (unpublished) flag
+	 *
+	 * @param   bool  $draft
+	 *
+	 * @return  void
 	 */
 	public function setDraft($draft)
 	{
@@ -165,7 +223,11 @@ class CreateReleaseTask extends GitHubTask
 	}
 
 	/**
-	 * @param boolean $prerelease
+	 * Set the pre-release flag
+	 *
+	 * @param   bool  $prerelease
+	 *
+	 * @return  void
 	 */
 	public function setPrerelease($prerelease)
 	{
@@ -173,23 +235,81 @@ class CreateReleaseTask extends GitHubTask
 	}
 
 	/**
-	 * @param int $id
+	 * Set the property name for the release ID
+	 *
+	 * @param   string  $id
+	 *
+	 * @return  void
 	 */
-	public function setId($id)
+	public function setPropName($id)
 	{
-		$this->id = $id;
+		$this->propName = $id;
 	}
 
 	/**
-	 * Check if the provided $tag implies that this is a pre-release. If so, set the pre-release flag.
+	 * Check if the provided $tag implies that this is a pre-release.
 	 *
 	 * @param   string  $tag
 	 *
 	 * @return  bool
 	 */
-	private function checkForPrerelease(string $tag): bool
+	private function isPrereleaseVersion(string $tag): bool
 	{
-		// TODO
+		// Convert the version tag to lower case
+		$tag = trim(strtolower($tag));
+
+		// Remove any "v." or "v" prefix
+		if (substr($tag, 0, 2) == 'v.')
+		{
+			$tag = trim(substr($tag, 2));
+		}
+
+		if (substr($tag, 0, 1) == 'v')
+		{
+			$tag = trim(substr($tag, 1));
+		}
+
+		// If the version tag begins with rev, dev, git or svn it's a prerelease
+		if (in_array(substr($tag, 0, 3), ['rev', 'dev', 'git', 'svn']))
+		{
+			return true;
+		}
+
+		// If it's a 0.x version it's a prerelease
+		if (substr($tag, 0, 3) == '0.')
+		{
+			return true;
+		}
+
+		// Look for a suffix after a dash, e.g. 1.2.3-beta or 1.2.3-b1 (you are bonkers or a Joomla! PLT member)
+		$parts = explode('-', $tag);
+
+		if (count($parts) > 1)
+		{
+			$suffix = array_pop($parts);
+			$suffix = preg_replace('/\d+/u', '', $suffix);
+
+			if (in_array($suffix, ['a', 'b', 'alpha', 'beta', 'rc', 'dev', 'test']))
+			{
+				return true;
+			}
+		}
+
+		// Look for a suffix after a dot, e.g. 1.2.3.beta or 1.2.3.b1 (recommended)
+		$parts = explode('.', $tag);
+
+		if (count($parts) > 1)
+		{
+			$suffix = array_pop($parts);
+			$suffix = preg_replace('/\d+/u', '', $suffix);
+
+			if (in_array($suffix, ['a', 'b', 'alpha', 'beta', 'rc', 'dev', 'test']))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -227,6 +347,26 @@ class CreateReleaseTask extends GitHubTask
 		$release = $this->client->api('repo')->releases()->create(
 			$this->organization,
 			$this->repository,
+			$apiParameters
+		);
+
+		return $release;
+	}
+
+	/**
+	 * Modifies an existing release to the provided GitHub API parameters.
+	 *
+	 * @param   int     $id             The release ID to edit
+	 * @param   array   $apiParameters  The GitHub API parameters
+	 *
+	 * @return  array
+	 */
+	private function editRelease(int $id, array $apiParameters)
+	{
+		$release = $this->client->api('repo')->releases()->edit(
+			$this->organization,
+			$this->repository,
+			$id,
 			$apiParameters
 		);
 
