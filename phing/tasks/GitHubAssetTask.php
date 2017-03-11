@@ -74,6 +74,8 @@ class GitHubAssetTask extends GitHubTask
 	 */
 	public function main()
 	{
+		parent::main();
+
 		$fileName  = $this->getFile();
 		$releaseId = $this->getReleaseId();
 		$asset     = $this->client

@@ -86,6 +86,8 @@ class GitHubReleaseTask extends GitHubTask
 	 */
 	public function main()
 	{
+		parent::main();
+
 		// Convert Phing attributes to GitHub API parameters.
 		$map    = [
 			'tagName'     => 'tag_name',
@@ -109,7 +111,7 @@ class GitHubReleaseTask extends GitHubTask
 		}
 
 		// Does the release exist?
-		$release = $this->getReleaseByTag($apiParameters['tagName']);
+		$release = $this->getReleaseByTag($apiParameters['tag_name']);
 
 		if (empty($release))
 		{
@@ -224,7 +226,7 @@ class GitHubReleaseTask extends GitHubTask
 	 */
 	public function setDraft($draft)
 	{
-		$this->draft = $draft;
+		$this->draft = (bool) $draft;
 	}
 
 	/**
@@ -329,7 +331,7 @@ class GitHubReleaseTask extends GitHubTask
 		$releases = $this->client->api('repo')->releases()->all(
 			$this->organization,
 			$this->repository,
-			$tag
+			[$tag]
 		);
 
 		if (empty($releases))

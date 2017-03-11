@@ -111,14 +111,18 @@ abstract class GitHubTask extends Task
 
 	public function init()
 	{
-		// Make sure we have a token
+		// Create the API client object
+		$this->client = new Client();
+	}
+
+	public function main()
+	{
+		// Make sure we have a token and apply authentication
 		if (empty($this->token))
 		{
 			throw new ConfigurationException('You need to provide your GitHub token.');
 		}
 
-		// Create the API client object and apply authentication
-		$this->client = new Client();
 		$this->client->authenticate($this->token, null, Client::AUTH_HTTP_TOKEN);
 	}
 }
