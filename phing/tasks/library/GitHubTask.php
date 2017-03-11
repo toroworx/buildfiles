@@ -111,8 +111,23 @@ abstract class GitHubTask extends Task
 
 	public function init()
 	{
-		// Create the API client object
-		$this->client = new Client();
+		// Create the API client object. Follow me...
+
+		/**
+		 * We need a Guzzle HTTP client which is explicitly told where the hell to look for the cacert.pem file because
+		 * if curl.cainfo is not set in php.ini (you can't ini_set() this!) and you're on Windows it will consistently
+		 * fail.
+		 */
+		$guzzleClient  = new \GuzzleHttp\Client([
+			'verify' => __DIR__ . '/cacert.pem' ,
+		]);
+
+		// Then we need to create an HTTPlug client adapter to the Guzzle client
+		$guzzleAdapter = new Http\Adapter\Guzzle6\Client($guzzleClient);
+		// In turn, we need to make an HTTPBuilder object to that adapter
+		$httpBuilder   = new Github\HttpClient\Builder($guzzleAdapter);
+		// Finally we have our client.
+		$this->client  = new Client($httpBuilder);
 	}
 
 	public function main()
@@ -120,7 +135,7 @@ abstract class GitHubTask extends Task
 		// Make sure we have a token and apply authentication
 		if (empty($this->token))
 		{
-			throw new ConfigurationException('You need to provide your GitHub token.');
+			throw new RuntimeException('You need to provide your GitHub token.');
 		}
 
 		$this->client->authenticate($this->token, null, Client::AUTH_HTTP_TOKEN);
