@@ -6,6 +6,11 @@
  * @copyright  (c) 2010-2017 Akeeba Ltd
  */
 
+if (!class_exists('GitHubTask'))
+{
+	require_once __DIR__ . '/library/GitHubTask.php';
+}
+
 /**
  * Upload an asset to a release. If the asset exists it is re-uploaded.
  *
