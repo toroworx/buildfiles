@@ -72,7 +72,7 @@ if (!defined('PCLZIP_TEMPORARY_DIR'))
 
 // ----- Optional threshold ratio for use of temporary files
 //       Pclzip sense the size of the file to add/extract and decide to
-//       use or not temporary file. The algorythm is looking for 
+//       use or not temporary file. The algorythm is looking for
 //       memory_limit of PHP and apply a ratio.
 //       threshold = memory_limit * ratio.
 //       Recommended values are under 0.5. Default 0.47.
@@ -1079,7 +1079,7 @@ class PclZip
 	// Options :
 	//   PCLZIP_OPT_BY_INDEX :
 	//   PCLZIP_OPT_BY_NAME :
-	//   PCLZIP_OPT_BY_EREG : 
+	//   PCLZIP_OPT_BY_EREG :
 	//   PCLZIP_OPT_BY_PREG :
 	// Return Values :
 	//   0 on failure,
@@ -1822,7 +1822,7 @@ class PclZip
 							$v_result_list[$p_options_list[$i]][$j]['start'] = $v_item_list[0];
 							$v_result_list[$p_options_list[$i]][$j]['end'] = $v_item_list[0];
 						}
-						elseif ($v_size_item_list == 2)
+                        elseif ($v_size_item_list == 2)
 						{
 							// ----- Set the option value
 							$v_result_list[$p_options_list[$i]][$j]['start'] = $v_item_list[0];
@@ -1947,7 +1947,7 @@ class PclZip
 		if ($v_requested_options !== false)
 		{
 			for ($key = reset($v_requested_options); $key = key($v_requested_options);
-				 $key = next($v_requested_options))
+			     $key = next($v_requested_options))
 			{
 				// ----- Look for mandatory option
 				if ($v_requested_options[$key] == 'mandatory')
@@ -2150,7 +2150,7 @@ class PclZip
 			if ($v_requested_options !== false)
 			{
 				for ($key = reset($v_requested_options); $key = key($v_requested_options);
-					 $key = next($v_requested_options))
+				     $key = next($v_requested_options))
 				{
 					// ----- Look for mandatory option
 					if ($v_requested_options[$key] == 'mandatory')
@@ -2180,7 +2180,7 @@ class PclZip
 	//   or a string to be added as file. For any other type of files (link, other)
 	//   just ignore the item.
 	//   Then prepare the information that will be stored for that file.
-	//   When its a folder, expand the folder with all the files that are in that 
+	//   When its a folder, expand the folder with all the files that are in that
 	//   folder (recursively).
 	// Parameters :
 	// Return Values :
@@ -2681,7 +2681,7 @@ class PclZip
 	// Function : privAddFileList()
 	// Description :
 	// Parameters :
-	//   $p_filedescr_list : An array containing the file description 
+	//   $p_filedescr_list : An array containing the file description
 	//                      or directory names to add in the zip
 	//   $p_result_list : list of added files with their properties (specially the status field)
 	// Return Values :
@@ -2772,7 +2772,7 @@ class PclZip
 			return PclZip::errorCode();
 		}
 
-		// ----- Look for a stored different filename 
+		// ----- Look for a stored different filename
 		/* TBC : Removed
     if (isset($p_filedescr['stored_filename'])) {
       $v_stored_filename = $p_filedescr['stored_filename'];
@@ -3699,7 +3699,7 @@ class PclZip
 						}
 					}
 					// ----- Look for a filename
-					elseif ($v_header['stored_filename'] == $p_options[PCLZIP_OPT_BY_NAME][$j])
+                    elseif ($v_header['stored_filename'] == $p_options[PCLZIP_OPT_BY_NAME][$j])
 					{
 						$v_extract = true;
 					}
@@ -3708,7 +3708,7 @@ class PclZip
 
 			// ----- Look for extract by ereg rule
 			// ereg() is deprecated with PHP 5.3
-			/* 
+			/*
       else if (   (isset($p_options[PCLZIP_OPT_BY_EREG]))
                && ($p_options[PCLZIP_OPT_BY_EREG] != "")) {
 
@@ -3884,7 +3884,7 @@ class PclZip
 					}
 				}
 				// ----- Look for extraction in standard output
-				elseif ((isset($p_options[PCLZIP_OPT_EXTRACT_IN_OUTPUT]))
+                elseif ((isset($p_options[PCLZIP_OPT_EXTRACT_IN_OUTPUT]))
 					&& ($p_options[PCLZIP_OPT_EXTRACT_IN_OUTPUT])
 				)
 				{
@@ -4324,7 +4324,7 @@ class PclZip
 		}
 
 		// ----- Look for post-extract callback
-		elseif (isset($p_options[PCLZIP_CB_POST_EXTRACT]))
+        elseif (isset($p_options[PCLZIP_CB_POST_EXTRACT]))
 		{
 
 			// ----- Generate a local information
@@ -4532,7 +4532,7 @@ class PclZip
 		}
 
 		// ----- Look for post-extract callback
-		elseif (isset($p_options[PCLZIP_CB_POST_EXTRACT]))
+        elseif (isset($p_options[PCLZIP_CB_POST_EXTRACT]))
 		{
 
 			// ----- Generate a local information
@@ -4657,7 +4657,7 @@ class PclZip
 		}
 
 		// ----- Look for post-extract callback
-		elseif (isset($p_options[PCLZIP_CB_POST_EXTRACT]))
+        elseif (isset($p_options[PCLZIP_CB_POST_EXTRACT]))
 		{
 
 			// ----- Generate a local information
@@ -5036,8 +5036,8 @@ class PclZip
 
 				// -----  Add the byte
 				//$v_bytes = ($v_bytes << 8) | Ord($v_byte);
-				// Note we mask the old value down such that once shifted we can never end up with more than a 32bit number 
-				// Otherwise on systems where we have 64bit integers the check below for the magic number will fail. 
+				// Note we mask the old value down such that once shifted we can never end up with more than a 32bit number
+				// Otherwise on systems where we have 64bit integers the check below for the magic number will fail.
 				$v_bytes = (($v_bytes & 0xFFFFFF) << 8) | Ord($v_byte);
 
 				// ----- Compare the bytes
@@ -5215,7 +5215,7 @@ class PclZip
 						{
 							$v_found = true;
 						}
-						elseif ((($v_header_list[$v_nb_extracted]['external'] & 0x00000010) == 0x00000010) /* Indicates a folder */
+                        elseif ((($v_header_list[$v_nb_extracted]['external'] & 0x00000010) == 0x00000010) /* Indicates a folder */
 							&& ($v_header_list[$v_nb_extracted]['stored_filename'] . '/' == $p_options[PCLZIP_OPT_BY_NAME][$j])
 						)
 						{
@@ -5223,7 +5223,7 @@ class PclZip
 						}
 					}
 					// ----- Look for a filename
-					elseif ($v_header_list[$v_nb_extracted]['stored_filename'] == $p_options[PCLZIP_OPT_BY_NAME][$j])
+                    elseif ($v_header_list[$v_nb_extracted]['stored_filename'] == $p_options[PCLZIP_OPT_BY_NAME][$j])
 					{
 						$v_found = true;
 					}
