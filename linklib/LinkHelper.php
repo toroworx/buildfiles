@@ -295,12 +295,16 @@ abstract class LinkHelper
 	 */
 	public function getRealPath(string $pathToConvert): string
 	{
+		// Get the Windows directory separator
+		$isWindows = self::isWindows();
+		$separator = $isWindows ? '\\' : '/';
+		
 		// Compatibility fix for Windows paths
-		$pathToConvert = str_replace(array('\\', '/'), DIRECTORY_SEPARATOR, $pathToConvert);
+		$pathToConvert = str_replace(array('\\', '/'), $separator, $pathToConvert);
 
 		// Explode $pathToConvert
 		// array_filter(..., 'strlen') prevent empty array $parts values (e.g. when $pathToConvert contains '//')
-		$parts = array_filter(explode(DIRECTORY_SEPARATOR, $pathToConvert), 'strlen');
+		$parts = array_filter(explode($separator, $pathToConvert), 'strlen');
 
 		$realPathParts = [];
 
@@ -321,7 +325,7 @@ abstract class LinkHelper
 			}
 		}
 
-		return DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $realPathParts);
+		return $separator . implode($separator, $realPathParts);
 	}
 
 	/**
